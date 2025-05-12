@@ -1,0 +1,94 @@
+.container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    background-color: #050505;
+    overflow: hidden;
+  }
+  
+  .mainCanvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    visibility: hidden; /* Canvas principal caché, utilisé seulement comme référence */
+  }
+  
+  .topHalfCanvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    z-index: 2;
+  }
+  
+  .bottomHalfCanvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    filter: blur(4px);
+    z-index: 2;
+  }
+  
+  .blurCanvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    filter: blur(15px);
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  .glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(65, 0, 255, 0.2) 0%, rgba(65, 0, 255, 0) 70%);
+    pointer-events: none;
+    mix-blend-mode: screen;
+    filter: blur(20px);
+    z-index: 0;
+  }
+  
+  .title {
+    position: absolute;
+    top: 2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2rem;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    color: #ffffff;
+    opacity: 1;
+    z-index: 3;
+  }
+  
+  .controls {
+    position: absolute;
+    bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    z-index: 3;
+  }
+  
+  .controls button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+  }
+  
+  .controls button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+  }

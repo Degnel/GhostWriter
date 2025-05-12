@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Circular Waveform</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background-color: #050505;
+      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      color: white;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    canvas {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: blur(1px);
+    }
+
+    .glow {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(65, 0, 255, 0.1) 0%, rgba(65, 0, 255, 0) 70%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .title {
+      position: absolute;
+      top: 2rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2rem;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      color: #ffffff;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="glow"></div>
+    <canvas id="networkCanvas"></canvas>
+    <h1 class="title">Circular Waveform</h1>
+    <div class="controls">
+      <button id="toggleAnimation">Pause / Play</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("networkCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    const nodes = [];
+    const connections = [];
+    const nodeCount = 40;
+    let isAnimating = true;
+
+    class Node {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.radius = 3 + Math.random() * 2;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Bounce on edges
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.shadowColor = "#00ffff";
+        ctx.shadowBlur = 8;
+        ctx.fill();
+      }
+    }
+
+    const distance = (a, b) => {
+      return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+    };
+
+    const initNodes = () => {
+      for (let i = 0; i < nodeCount; i++) {
+        nodes.push(new Node());
+      }
+
+      // Connect all pairs under threshold
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          if (distance(nodes[i], nodes[j]) < 200) {
+            connections.push([nodes[i], nodes[j]]);
+          }
+        }
+      }
+    };
+
+    const animate = () => {
+      if (!isAnimating) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update and draw nodes
+      nodes.forEach((node) => {
+        node.update();
+        node.draw();
+      });
+
+      // Draw connections
+      connections.forEach(([a, b]) => {
+        const d = distance(a, b);
+        if (d < 150) {
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `rgba(0, 255, 255, ${1 - d / 150})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      });
+
+      requestAnimationFrame(animate);
+    };
+
+    document.getElementById("toggleAnimation").addEventListener("click", () => {
+      isAnimating = !isAnimating;
+      if (isAnimating) animate();
+    });
+
+    initNodes();
+    animate();
+  </script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Circular Waveform</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background-color: #050505;
+      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      color: white;
+    }
+    
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    
+    canvas {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: none; /* Enlever le flou global */
+    }
+    
+    .glow {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(65, 0, 255, 0.2) 0%, rgba(65, 0, 255, 0) 70%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+      filter: blur(20px);
+    }
+    
+    .blur-overlay {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .title {
+      position: absolute;
+      top: 2rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2rem;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      color: #ffffff;
+      opacity: 1;
+    }
+    
+    .controls {
+      position: absolute;
+      bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+    
+    button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+    
+    button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="glow"></div>
+    <canvas id="waveCanvas"></canvas>
+    <canvas id="blurCanvas" class="blur-overlay"></canvas>
+    <h1 class="title">Circular Waveform</h1>
+    <div class="controls">
+      <button id="changeColor">Changer les couleurs</button>
+      <button id="toggleAnimation">Pause / Play</button>
+    </div>
+  </div>
+  
+  <script>
+    // Exécution immédiate du script
+    window.onload = () => {
+      const canvas = document.getElementById('waveCanvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas dimensions
+      const setDimensions = () => {
+        const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+        canvas.width = size;
+        canvas.height = size;
+      };
+      
+      setDimensions();
+      window.addEventListener('resize', setDimensions);
+      
+      // Colors and configuration
+      let colorSets = [
+        ['#FF00FF', '#00FFFF', '#FFFF00', '#FF00FF'],
+        ['#FF0055', '#00FFAA', '#AAFF00', '#FF0055'],
+        ['#5500FF', '#00FFFF', '#FF00AA', '#5500FF'],
+        ['#FF0000', '#00FF00', '#0000FF', '#FF0000'],
+      ];
+      
+      let currentColorSet = 0;
+      let isAnimating = true;
+      let time = 0;
+      let waveCount = 5;
+      
+      // Animation parameters
+      const params = {
+        radius: canvas.width * 0.35,
+        frequency: 0.5,
+        amplitude: 50,
+        speed: 0.02
+      };
+      
+      // Generate points for the circular wave
+      const getWavePoints = (time, waveIndex) => {
+        const points = [];
+        const steps = 200;
+        const phaseOffset = (waveIndex / waveCount) * Math.PI * 2;
+        
+        for (let i = 0; i <= steps; i++) {
+          const angle = (i / steps) * Math.PI * 2;
+          const distortionFactor = Math.sin(angle * params.frequency * (waveIndex + 1) + time + phaseOffset);
+          const radiusOffset = distortionFactor * params.amplitude * (1 - waveIndex * 0.15);
+          
+          const radius = params.radius + radiusOffset;
+          const x = Math.cos(angle) * radius;
+          const y = Math.sin(angle) * radius;
+          
+          points.push({ x, y });
+        }
+        
+        return points;
+      };
+      
+      // Draw wave
+      const drawWave = (points, colorIndex, alpha) => {
+        const gradient = ctx.createLinearGradient(
+          -params.radius, -params.radius, 
+          params.radius, params.radius
+        );
+        
+        const colors = colorSets[currentColorSet];
+        gradient.addColorStop(0, colors[0]);
+        gradient.addColorStop(0.33, colors[1]);
+        gradient.addColorStop(0.66, colors[2]);
+        gradient.addColorStop(1, colors[3]);
+        
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        
+        for (let i = 1; i < points.length; i++) {
+          const { x, y } = points[i];
+          ctx.lineTo(x, y);
+        }
+        
+        // ctx.closePath();
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = alpha;
+        ctx.stroke();
+        
+        // Add glow effect
+        ctx.shadowColor = colors[colorIndex % colors.length];
+        ctx.shadowBlur = 15;
+        ctx.stroke();
+        ctx.restore();
+      };
+      
+      // Main animation loop
+      const animate = () => {
+        if (!isAnimating) return;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw multiple waves
+        for (let i = 0; i < waveCount; i++) {
+          const alpha = 1 - (i / waveCount) * 0.6;
+          const points = getWavePoints(time, i);
+          drawWave(points, i, alpha);
+        }
+        
+        time += params.speed;
+        requestAnimationFrame(animate);
+      };
+      
+      // Event handlers
+      document.getElementById('changeColor').addEventListener('click', () => {
+        currentColorSet = (currentColorSet + 1) % colorSets.length;
+      });
+      
+      document.getElementById('toggleAnimation').addEventListener('click', () => {
+        isAnimating = !isAnimating;
+        if (isAnimating) animate();
+      });
+      
+      // Start animation
+      animate();
+    };
+  </script>
+</body>
+</html>

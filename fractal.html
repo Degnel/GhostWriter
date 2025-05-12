@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Circular Waveform - Fractale</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #050505;
+      font-family: 'Inter', sans-serif;
+      color: white;
+    }
+
+    .title {
+      position: absolute;
+      top: 2rem;
+      width: 100%;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(255,255,255,0.5);
+      z-index: 10;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .glow {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(65, 0, 255, 0.1) 0%, rgba(65, 0, 255, 0) 70%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <h1 class="title">Circular Waveform</h1>
+  <canvas id="fractale"></canvas>
+
+  <script>
+    const canvas = document.getElementById("fractale");
+    const ctx = canvas.getContext("2d");
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    function drawBranch(x, y, len, angle, depth, branchWidth, hue) {
+      const maxDepth = 10;
+      const swaying = Math.sin(Date.now() / 1000 + x * 0.01 + y * 0.01) * 0.2;
+
+      if (depth === 0) return;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle + swaying);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -len);
+      ctx.strokeStyle = `hsl(${hue}, 100%, ${60 - depth * 3}%)`;
+      ctx.lineWidth = branchWidth;
+      ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+      ctx.shadowBlur = 5;
+      ctx.stroke();
+
+      const newX = 0;
+      const newY = -len;
+      const newLen = len * 0.7;
+      const newWidth = branchWidth * 0.7;
+      const newHue = hue + 10;
+
+      drawBranch(newX, newY, newLen, -0.4, depth - 1, newWidth, newHue);
+      drawBranch(newX, newY, newLen, 0.4, depth - 1, newWidth, newHue);
+
+      ctx.restore();
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2 + 200; // centrer verticalement
+      const baseLength = 100;
+      const hue = (Date.now() / 50) % 360;
+
+      drawBranch(centerX, centerY, baseLength, 0, 9, 6, hue);
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

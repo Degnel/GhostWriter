@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Circular Waveform</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #050505;
+      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      color: white;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    canvas {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: blur(2px);
+    }
+
+    .glow {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(65, 0, 255, 0.1) 0%, rgba(65, 0, 255, 0) 70%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .title {
+      position: absolute;
+      top: 2rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2rem;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      color: #ffffff;
+      opacity: 1;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="glow"></div>
+    <canvas id="spiroCanvas"></canvas>
+    <h1 class="title">Circular Waveform</h1>
+    <div class="controls">
+      <button id="changeColor">Changer les couleurs</button>
+      <button id="toggleAnimation">Pause / Play</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('spiroCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let isAnimating = true;
+    let colorIndex = 0;
+
+    const colors = [
+      ['#FF00FF', '#00FFFF'],
+      ['#00FFAA', '#AA00FF'],
+      ['#5500FF', '#FF0055'],
+    ];
+
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let t = 0;
+
+    function drawSpirograph(R, r, d, color1, color2) {
+      ctx.save();
+      ctx.translate(width / 2, height / 2);
+      ctx.clearRect(-width / 2, -height / 2, width, height);
+
+      ctx.beginPath();
+      for (let theta = 0; theta <= Math.PI * 10; theta += 0.01) {
+        const x = (R - r) * Math.cos(theta) + d * Math.cos(((R - r) / r) * theta);
+        const y = (R - r) * Math.sin(theta) - d * Math.sin(((R - r) / r) * theta);
+        ctx.lineTo(x, y);
+      }
+
+      const gradient = ctx.createLinearGradient(-200, -200, 200, 200);
+      gradient.addColorStop(0, color1);
+      gradient.addColorStop(1, color2);
+
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = color1;
+      ctx.shadowBlur = 15;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function animate() {
+      if (!isAnimating) return;
+      t += 0.01;
+
+      const R = 120 + 20 * Math.sin(t / 2);
+      const r = 60 + 10 * Math.cos(t / 3);
+      const d = 80 + 30 * Math.sin(t);
+
+      const [c1, c2] = colors[colorIndex];
+      drawSpirograph(R, r, d, c1, c2);
+
+      requestAnimationFrame(animate);
+    }
+
+    document.getElementById('changeColor').addEventListener('click', () => {
+      colorIndex = (colorIndex + 1) % colors.length;
+    });
+
+    document.getElementById('toggleAnimation').addEventListener('click', () => {
+      isAnimating = !isAnimating;
+      if (isAnimating) animate();
+    });
+
+    animate();
+  </script>
+</body>
+</html>
