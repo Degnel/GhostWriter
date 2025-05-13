@@ -24,7 +24,7 @@
     }
     .title {
       position: absolute;
-      top: 2rem;
+      top: 12vh;
       font-size: 1.5rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -34,7 +34,7 @@
   </style>
 </head>
 <body>
-  <h1 class="title">Neural Network</h1>
+  <h1 class="title">Alan Tuning</h1>
   <canvas id="networkCanvas"></canvas>
 
   <script>
@@ -53,9 +53,9 @@
     const layerSpacing = networkWidth / (layers - 1);
     const neuronSpacing = networkHeight / (neuronsPerLayer - 1);
     const radius = 8;
+    var interp = 0;
 
     const animationStart = 0.5;
-
     // Calcul des offsets pour centrer le réseau
     const offsetX = (canvas.width - networkWidth) / 2;
     const offsetY = (canvas.height - networkHeight) / 2;
@@ -122,6 +122,15 @@
       return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
     }
 
+    // --- Ajout : fonction d'activation lumineuse par couche ---
+    function getLayerActivation(layerIdx, time) {
+      // Onde sinusoïdale qui se propage de la couche 0 à la dernière
+      const speed = 0.0012; // vitesse de propagation
+      const phase = time * speed - layerIdx * 0.7;
+      // Activation entre 0 et 1, pic bien marqué
+      return 0.5 + 0.5 * Math.sin(phase);
+    }
+
     function drawNetwork(time) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -172,40 +181,80 @@
 
       // Connexions MLP (fully-connected entre couches adjacentes) à l'état final
       if (t > animationStart) {
-        const interp = (t - animationStart) / animationStart;
+        interp = (t - animationStart) / animationStart;
+        // --- Ajout : calcul de l'activation de chaque couche ---
+        const layerActivations = [];
+        for (let l = 0; l < nodes.length; l++) {
+          layerActivations[l] = getLayerActivation(l, animTime);
+        }
+
         for (let l = 0; l < nodes.length; l++) {
           for (let n = 0; n < nodes[l].length; n++) {
             nodes[l][n].moveToFinal(Math.min(interp, 1), animTime);
           }
         }
-        
+
         // Dessiner toutes les connexions entre les couches adjacentes
         for (let l = 0; l < nodes.length - 1; l++) {
-          for (let sourceNeuron of nodes[l]) {
-            for (let targetNeuron of nodes[l + 1]) {
-              const connIntensity = 20000 * Math.tanh(interp) / Math.pow(distance(sourceNeuron, targetNeuron), 1.9);
-              
+          // L'énergie lumineuse part de la couche l vers l+1
+          const sourceActivation = layerActivations[l];
+          const targetActivation = layerActivations[l + 1];
+          for (let i = 0; i < nodes[l].length; i++) {
+            const sourceNeuron = nodes[l][i];
+            // L'énergie de chaque neurone source est modulée par l'activation de la couche
+            for (let j = 0; j < nodes[l + 1].length; j++) {
+              const targetNeuron = nodes[l + 1][j];
+              const connDist = distance(sourceNeuron, targetNeuron);
+              // Intensité lumineuse = activation source * activation cible, adoucie par la distance
+              let connIntensity = sourceActivation * targetActivation * 1.5 * Math.tanh(interp) / Math.pow(connDist / 100, 1.5);
+              // let connIntensity = sourceActivation * targetActivation * 1.5 / Math.pow(connDist / 100, 1.5);
+              connIntensity = Math.min(1, connIntensity);
+
+              // Ajout d'un effet de "flux" : la couleur varie dans le temps et selon la position
+              const fluxPhase = animTime * 0.003 - l * 0.7 + (i + j) * 0.15;
+              const flux = 0.7 + 0.3 * Math.sin(fluxPhase);
+
               ctx.beginPath();
               ctx.moveTo(sourceNeuron.x, sourceNeuron.y);
               ctx.lineTo(targetNeuron.x, targetNeuron.y);
-              
-              ctx.strokeStyle = `rgba(0,255,255,${connIntensity})`;
-              ctx.lineWidth = 0.5; // Ligne fine
+              ctx.strokeStyle = `rgba(100,255,255,${connIntensity * flux})`;
+              ctx.lineWidth = 1.2 * connIntensity + 0.3;
+              ctx.shadowColor = "#00ffff";
+              // ctx.shadowBlur = 8 * connIntensity;
+              ctx.shadowBlur = 0;
               ctx.stroke();
+              ctx.shadowBlur = 0;
             }
           }
         }
+        // --- Fin ajout connexions lumineuses ---
       }
-      // Draw nodes
-      for (let node of flatNodes) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${0.7 + 0.3 * node.intensity})`;
-        ctx.shadowColor = "#00ffff";
-        ctx.shadowBlur = 10 + 10 * node.intensity;
-        ctx.fill();
-        ctx.restore();
+
+      // Draw nodes (ajout : modulation par activation de couche)
+      for (let l = 0; l < nodes.length; l++) {
+        const layerActivation = t > animationStart ? getLayerActivation(l, animTime) : 0;
+        for (let n = 0; n < nodes[l].length; n++) {
+          const node = nodes[l][n];
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+          // Intensité = activation de la couche + oscillation propre du neurone
+          let intensity = (0.6 * layerActivation + 0.4 * node.intensity) * (0 + 1 * layerActivation) * Math.tanh(interp);
+
+          // Interpolation continue du gris vers le cyan
+          // intensity ∈ [0,1]
+          // Gris: R=G=B=val, Cyan: R=0, G=B=255
+          const gray = 0.7 * 255; // même valeur que précédemment pour le gris de base
+          const r = Math.round(gray * (1 - intensity) + 180 * intensity);
+          const g = Math.round(gray * (1 - intensity) + 255 * intensity);
+          const b = Math.round(gray * (1 - intensity) + 255 * intensity);
+
+          ctx.fillStyle = `rgba(${r},${g},${b},255)`;
+          ctx.shadowColor = ctx.fillStyle;
+          ctx.shadowBlur = 2 * intensity;
+          ctx.fill();
+          ctx.restore();
+        }
       }
 
       // --- Fade-in effect après l'écran noir ---
