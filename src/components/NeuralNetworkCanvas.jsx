@@ -1,10 +1,12 @@
 "use client";
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from '../styles/NeuralNetwork.module.css';
 import ParticleNode from '../utils/ParticleNode';
+import { Conversation } from './conversation';
 
 export default function NeuralNetworkCanvas() {
   const canvasRef = useRef(null);
+  const [showConversation, setShowConversation] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -160,6 +162,11 @@ export default function NeuralNetworkCanvas() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
       }
+
+      // Afficher la conversation à la fin de l'animation
+      if (!showConversation && t >= 1) {
+        setShowConversation(true);
+      }
     }
 
     function animate(time) {
@@ -173,5 +180,10 @@ export default function NeuralNetworkCanvas() {
     // ...existing code...
   }, []);
 
-  return <canvas ref={canvasRef} className={styles.canvas} />;
+  return (
+    <div>
+      <canvas ref={canvasRef} className={styles.canvas} />
+      {showConversation && <Conversation />}
+    </div>
+  );
 }
