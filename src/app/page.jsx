@@ -61,6 +61,13 @@ export default function HomePage() {
     }
   }, [currentMusic]);
 
+  // Ajout : régler le volume via le ref
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = 0.15; // Choisis le volume désiré ici (0.0 à 1.0)
+    }
+  }, [currentMusic]);
+
   useEffect(() => {
     // Lance le fade in après 1s (au lieu de 50ms)
     const timer = setTimeout(() => setFadeIn(true), 500);
@@ -202,7 +209,7 @@ export default function HomePage() {
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            Launch Experience
+            Call the Maid
           </button>
         </div>
       )}

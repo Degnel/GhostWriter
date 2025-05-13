@@ -19,7 +19,7 @@ export function Conversation() {
         await navigator.mediaDevices.getUserMedia({ audio: true });
         // Start the conversation with your agent
         await conversation.startSession({
-          agentId: 'lHuy5ZwUsriLS0UFONUi',
+          agentId: 'MC7ZFoe2uncxPZGSLfZo',
         });
         started = true;
       } catch (error) {
