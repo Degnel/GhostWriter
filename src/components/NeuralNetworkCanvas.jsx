@@ -4,7 +4,7 @@ import styles from '../styles/NeuralNetwork.module.css';
 import ParticleNode from '../utils/ParticleNode';
 import { Conversation } from './conversation';
 
-export default function NeuralNetworkCanvas() {
+export default function NeuralNetworkCanvas({ start }) {
   const canvasRef = useRef(null);
   const [showConversation, setShowConversation] = useState(false);
 
@@ -59,7 +59,8 @@ export default function NeuralNetworkCanvas() {
       if (time < blackScreenDuration) {
         ctx.save();
         ctx.globalAlpha = 1;
-        ctx.fillStyle = "#050505";
+        // ctx.fillStyle = "rgba(10,10,20,0.92)"; // bleu foncé au lieu de noir
+        ctx.fillStyle = "rgba(0,0,0,0)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
         return;
@@ -147,6 +148,15 @@ export default function NeuralNetworkCanvas() {
           const g = Math.round(gray * (1 - intensity) + 255 * intensity);
           const b = Math.round(gray * (1 - intensity) + 255 * intensity);
 
+          // --- Ajout du fade-in ---
+          // Les nodes commencent à apparaître après blackScreenDuration
+          // On fait un fade-in sur 1s (1000ms) après blackScreenDuration
+          let fadeInAlpha = 1;
+          if (animTime < 1000) {
+            fadeInAlpha = Math.max(0, Math.min(1, animTime / 1000));
+          }
+          ctx.globalAlpha = fadeInAlpha;
+
           ctx.fillStyle = `rgba(${r},${g},${b},255)`;
           ctx.shadowColor = ctx.fillStyle;
           ctx.shadowBlur = 10 * intensity;
@@ -158,7 +168,8 @@ export default function NeuralNetworkCanvas() {
       if (animTime < fadeDuration) {
         ctx.save();
         ctx.globalAlpha = 1 - (animTime / fadeDuration);
-        ctx.fillStyle = "#050505";
+        // ctx.fillStyle = "rgba(10,10,20,0.92)"; // bleu foncé au lieu de noir
+        ctx.fillStyle = "rgba(0,0,0,0)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
       }
@@ -169,16 +180,19 @@ export default function NeuralNetworkCanvas() {
       }
     }
 
-    function animate(time) {
-      drawNetwork(time);
+    function animate(now) {
+      // Use the provided start time as the animation origin
+      const startTime = start || 0;
+      const elapsed = startTime ? now - startTime : now;
+      drawNetwork(elapsed);
       requestAnimationFrame(animate);
     }
 
-    animate(0);
+    requestAnimationFrame(animate);
 
     // Optional: handle resize
     // ...existing code...
-  }, []);
+  }, [start]);
 
   return (
     <div>
