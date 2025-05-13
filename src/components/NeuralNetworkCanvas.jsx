@@ -1,55 +1,21 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Neural Network Layout</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #050505;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: white;
-      font-family: 'Inter', sans-serif;
-    }
-    canvas {
-      background: transparent;
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-    .title {
-      position: absolute;
-      top: 12vh;
-      font-size: 1.5rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.2rem;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    }
-  </style>
-</head>
-<body>
-  <h1 class="title">Alan Tuning</h1>
-  <canvas id="networkCanvas"></canvas>
+"use client";
+import { useEffect, useRef } from 'react';
+import styles from '../styles/NeuralNetwork.module.css';
+import ParticleNode from '../utils/ParticleNode';
 
-  <script>
-    const canvas = document.getElementById("networkCanvas");
-    const ctx = canvas.getContext("2d");
+export default function NeuralNetworkCanvas() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // --- Ajout : rendre startConversation accessible ---
-    // On suppose que la fonction sera définie ailleurs (ex: dans elevenlabs-conv.js)
-    // window.startConversation = ... (sera défini plus tard)
-
-    const blackScreenDuration = 1000; // 1s écran noir au début
-    const fadeDuration = 2000; // 2s de fade-in après l'écran noir
-
+    // --- Constants (copied from index.html) ---
+    const blackScreenDuration = 1000;
+    const fadeDuration = 2000;
     const layers = 5;
     const neuronsPerLayer = 5;
     const networkWidth = canvas.width * 0.3;
@@ -57,88 +23,37 @@
     const layerSpacing = networkWidth / (layers - 1);
     const neuronSpacing = networkHeight / (neuronsPerLayer - 1);
     const radius = 8;
-    var interp = 0;
-
+    let interp = 0;
     const animationStart = 0.5;
-    // Calcul des offsets pour centrer le réseau
     const offsetX = (canvas.width - networkWidth) / 2;
     const offsetY = (canvas.height - networkHeight) / 2;
+    const introDuration = 6000;
 
-    // --- Particle-like intro setup ---
-    class ParticleNode {
-      constructor(baseX, baseY) {
-        this.baseX = baseX;
-        this.baseY = baseY;
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 1.2;
-        this.vy = (Math.random() - 0.5) * 1.2;
-        this.radius = radius;
-        this.phase = Math.random() * Math.PI * 2;
-        this.intensityPhase = Math.random() * Math.PI * 2;
-        this.intensity = 1;
-        this.targetX = baseX;
-        this.targetY = baseY;
-        this.oscPhase = Math.random() * Math.PI * 2;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        // Bounce on edges
-        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-      }
-      moveToFinal(t, time) {
-        // Interpolation encore plus lente vers la position finale (ease-in fort)
-        const slowT = Math.pow(t, 4); // Quartique pour ralentir fortement le début
-        let finalX = this.x * (1 - slowT) + this.baseX * slowT;
-        let finalY = this.y * (1 - slowT) + this.baseY * slowT;
-
-        // Transition douce vers l'oscillation
-        // oscFade passe de 0 à 1 quand t va de transitionThreshold à 1
-        const transitionThreshold = 0.5
-        let oscFade = Math.max(0, Math.min(1, (t - transitionThreshold) / (1 - transitionThreshold)));
-        const floatRadius = 10;
-        const speed = 0.8;
-        const oscX = this.baseX + Math.sin(time * 0.001 * speed + this.oscPhase) * floatRadius;
-        const oscY = this.baseY + Math.cos(time * 0.001 * speed + this.oscPhase) * floatRadius;
-
-        this.x = finalX * (1 - oscFade) + oscX * oscFade;
-        this.y = finalY * (1 - oscFade) + oscY * oscFade;
-      }
-    }
-
+    // --- Nodes ---
     const nodes = [];
     for (let l = 0; l < layers; l++) {
       const layer = [];
       for (let n = 0; n < neuronsPerLayer; n++) {
         const x = offsetX + l * layerSpacing;
         const y = offsetY + n * neuronSpacing;
-        layer.push(new ParticleNode(x, y));
+        layer.push(new ParticleNode(x, y, canvas, radius));
       }
       nodes.push(layer);
     }
-
-    // Animation d'intro
-    const introDuration = 6000; // ms (plus lent)
 
     function distance(a, b) {
       return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
     }
 
-    // --- Ajout : fonction d'activation lumineuse par couche ---
     function getLayerActivation(layerIdx, time) {
-      // Onde sinusoïdale qui se propage de la couche 0 à la dernière
-      const speed = 0.0012; // vitesse de propagation
+      const speed = 0.0012;
       const phase = time * speed - layerIdx * 0.7;
-      // Activation entre 0 et 1, pic bien marqué
       return 0.5 + 0.5 * Math.sin(phase);
     }
 
     function drawNetwork(time) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Affiche écran noir pendant blackScreenDuration
       if (time < blackScreenDuration) {
         ctx.save();
         ctx.globalAlpha = 1;
@@ -148,18 +63,15 @@
         return;
       }
 
-      // Décale le temps d'animation pour le reste
       const animTime = time - blackScreenDuration;
       let t = Math.min(animTime / introDuration, 1);
 
-      // Update particle positions
       const flatNodes = nodes.flat();
       for (let node of flatNodes) {
         node.update();
         node.intensity = 0.5 + 0.5 * Math.abs(Math.sin((animTime * 0.001) * 1.2 + node.intensityPhase));
       }
 
-      // Connexions locales dynamiques (proches spatialement)
       let introConnections = [];
       for (let i = 0; i < flatNodes.length; i++) {
         for (let j = i + 1; j < flatNodes.length; j++) {
@@ -170,7 +82,6 @@
         }
       }
 
-      // Draw connections (locales) uniquement pendant l'intro
       if (t <= animationStart) {
         for (let [a, b] of introConnections) {
           const d = distance(a, b);
@@ -183,38 +94,27 @@
         }
       }
 
-      // Connexions MLP (fully-connected entre couches adjacentes) à l'état final
       if (t > animationStart) {
         interp = (t - animationStart) / animationStart;
-        // --- Ajout : calcul de l'activation de chaque couche ---
         const layerActivations = [];
         for (let l = 0; l < nodes.length; l++) {
           layerActivations[l] = getLayerActivation(l, animTime);
         }
-
         for (let l = 0; l < nodes.length; l++) {
           for (let n = 0; n < nodes[l].length; n++) {
             nodes[l][n].moveToFinal(Math.min(interp, 1), animTime);
           }
         }
-
-        // Dessiner toutes les connexions entre les couches adjacentes
         for (let l = 0; l < nodes.length - 1; l++) {
-          // L'énergie lumineuse part de la couche l vers l+1
           const sourceActivation = layerActivations[l];
           const targetActivation = layerActivations[l + 1];
           for (let i = 0; i < nodes[l].length; i++) {
             const sourceNeuron = nodes[l][i];
-            // L'énergie de chaque neurone source est modulée par l'activation de la couche
             for (let j = 0; j < nodes[l + 1].length; j++) {
               const targetNeuron = nodes[l + 1][j];
               const connDist = distance(sourceNeuron, targetNeuron);
-              // Intensité lumineuse = activation source * activation cible, adoucie par la distance
               let connIntensity = sourceActivation * targetActivation * 1.5 * Math.tanh(interp) / Math.pow(connDist / 100, 1.5);
-              // let connIntensity = sourceActivation * targetActivation * 1.5 / Math.pow(connDist / 100, 1.5);
               connIntensity = Math.min(1, connIntensity);
-
-              // Ajout d'un effet de "flux" : la couleur varie dans le temps et selon la position
               const fluxPhase = animTime * 0.003 - l * 0.7 + (i + j) * 0.15;
               const flux = 0.7 + 0.3 * Math.sin(fluxPhase);
 
@@ -225,16 +125,13 @@
               ctx.lineWidth = 1.2 * connIntensity + 0.3;
               ctx.shadowColor = "#00ffff";
               ctx.shadowBlur = 2 * connIntensity;
-              // ctx.shadowBlur = 0;
               ctx.stroke();
               ctx.shadowBlur = 0;
             }
           }
         }
-        // --- Fin ajout connexions lumineuses ---
       }
 
-      // Draw nodes (ajout : modulation par activation de couche)
       for (let l = 0; l < nodes.length; l++) {
         const layerActivation = t > animationStart ? getLayerActivation(l, animTime) : 0;
         for (let n = 0; n < nodes[l].length; n++) {
@@ -242,13 +139,8 @@
           ctx.save();
           ctx.beginPath();
           ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
-          // Intensité = activation de la couche + oscillation propre du neurone
           let intensity = (0.6 * layerActivation + 0.4 * node.intensity) * (0 + 1 * layerActivation) * Math.tanh(interp);
-
-          // Interpolation continue du gris vers le cyan
-          // intensity ∈ [0,1]
-          // Gris: R=G=B=val, Cyan: R=0, G=B=255
-          const gray = 0.7 * 255; // même valeur que précédemment pour le gris de base
+          const gray = 0.7 * 255;
           const r = Math.round(gray * (1 - intensity) + 180 * intensity);
           const g = Math.round(gray * (1 - intensity) + 255 * intensity);
           const b = Math.round(gray * (1 - intensity) + 255 * intensity);
@@ -261,7 +153,6 @@
         }
       }
 
-      // --- Fade-in effect après l'écran noir ---
       if (animTime < fadeDuration) {
         ctx.save();
         ctx.globalAlpha = 1 - (animTime / fadeDuration);
@@ -271,15 +162,16 @@
       }
     }
 
-    let hasStartedConversation = false; // Ajout d'un flag
-
-    // Animation loop
     function animate(time) {
       drawNetwork(time);
       requestAnimationFrame(animate);
     }
 
     animate(0);
-  </script>
-</body>
-</html>
+
+    // Optional: handle resize
+    // ...existing code...
+  }, []);
+
+  return <canvas ref={canvasRef} className={styles.canvas} />;
+}

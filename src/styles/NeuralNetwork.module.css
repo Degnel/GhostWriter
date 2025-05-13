@@ -1,0 +1,26 @@
+.container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+.canvas {
+    background: transparent;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+}
+.title {
+    position: absolute;
+    top: 12vh;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2rem;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
